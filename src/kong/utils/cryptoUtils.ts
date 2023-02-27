@@ -6,11 +6,15 @@ import { ethers } from "ethers";
 // https://github.com/kong-org/halo-verify-web/blob/e821759c0d6190bdc8ffd45aab49b3db300a4b21/src/stores/registerStore.tsx#L156
 export const hashMessageEIP191SolidityKeccak = (
   address: string,
-  hash: string
+  hash: string,
+  nonce: number
 ) => {
   const messagePrefix = "\x19Ethereum Signed Message:\n32";
   const message = address
-    ? ethers.utils.solidityKeccak256(["address", "bytes32"], [address, hash])
+    ? ethers.utils.solidityKeccak256(
+        ["address", "bytes32", "uint256"],
+        [address, hash, nonce]
+      )
     : ethers.utils.solidityKeccak256(["bytes32"], [hash]);
   return ethers.utils.solidityKeccak256(
     ["string", "bytes32"],

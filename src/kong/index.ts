@@ -17,11 +17,12 @@ function generateCmd(
   cmd: number,
   keyslot: number,
   address: string,
-  hash: string
+  hash: string,
+  nonce: number
 ) {
   // EIP-191 signed data for local verification.
   // let messageBytes = ethers.utils.hashMessage(message);
-  let messageBytes = hashMessageEIP191SolidityKeccak(address, hash);
+  let messageBytes = hashMessageEIP191SolidityKeccak(address, hash, nonce);
 
   // Remove prepended 0x.
   messageBytes = messageBytes.slice(2);
@@ -146,10 +147,12 @@ export const getSignatureFromScan = async ({
   chipPublicKey,
   address,
   hash,
+  nonce,
 }: {
   chipPublicKey: string;
   address: string;
   hash: string;
+  nonce: number;
   rpId?: string;
 }) => {
   if (!IS_BROWSER) {
@@ -158,7 +161,7 @@ export const getSignatureFromScan = async ({
     return;
   }
 
-  const sigCmd = generateCmd(1, 1, address, hash);
+  const sigCmd = generateCmd(1, 1, address, hash, nonce);
   const sig = await triggerScan({
     reqx: sigCmd,
     rpId: rpId ?? parseHostName(),
@@ -185,7 +188,7 @@ export const getSignatureFromScan = async ({
   const v28 = buf2hex(vArr28);
 
   const computedAddress = ethers.utils.computeAddress("0x" + chipPublicKey);
-  const messageHash = hashMessageEIP191SolidityKeccak(address, hash);
+  const messageHash = hashMessageEIP191SolidityKeccak(address, hash, nonce);
 
   let vType = undefined;
   if (
