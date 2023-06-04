@@ -1,3 +1,9 @@
+export declare function generateCmdForRegistration(
+  cmd: number,
+  keyslot: number,
+  address: string,
+  hash: string
+): string;
 export declare function parseKeys(payload: string):
   | false
   | {
@@ -18,7 +24,7 @@ export declare const getSignatureFromScan: ({
   chipPublicKey: string;
   address: string;
   hash: string;
-  nonce: number;
+  nonce?: number | undefined;
   rpId?: string | undefined;
 }) => Promise<string | undefined>;
 export declare const getPublicKeysFromScan: ({

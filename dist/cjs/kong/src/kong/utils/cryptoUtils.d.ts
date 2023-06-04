@@ -1,3 +1,7 @@
+export declare const hashMessageEIP191SolidityKeccakNoNonce: (
+  address: string,
+  hash: string
+) => string;
 export declare const hashMessageEIP191SolidityKeccak: (
   address: string,
   hash: string,

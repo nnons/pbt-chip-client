@@ -13,6 +13,11 @@ const buf2hex = (buffer) => {
 // TODO: consider using 712 instead https://www.npmjs.com/package/ethers-eip712
 // Would need to mimic _signTypedData functionality https://docs.ethers.io/v5/api/signer/#Signer-signTypedData raw with chip
 // https://github.com/kong-org/halo-verify-web/blob/e821759c0d6190bdc8ffd45aab49b3db300a4b21/src/stores/registerStore.tsx#L156
+const hashMessageEIP191SolidityKeccakNoNonce = (address, hash) => {
+    const messagePrefix = "\x19Ethereum Signed Message:\n32";
+    const message = ethers.utils.solidityKeccak256(["address", "bytes32"], [address, hash]);
+    return ethers.utils.solidityKeccak256(["string", "bytes32"], [messagePrefix, ethers.utils.arrayify(message)]);
+};
 const hashMessageEIP191SolidityKeccak = (address, hash, nonce) => {
     const messagePrefix = "\x19Ethereum Signed Message:\n32";
     const message = address
@@ -54,6 +59,21 @@ const IS_BROWSER = typeof window !== "undefined";
 function parseHostName() {
     const url = new URL(window.location.href);
     return url.hostname;
+}
+function generateCmdForRegistration(cmd, keyslot, address, hash) {
+    // EIP-191 signed data for local verification.
+    // let messageBytes = ethers.utils.hashMessage(message);
+    let messageBytes = hashMessageEIP191SolidityKeccakNoNonce(address, hash);
+    // Remove prepended 0x.
+    messageBytes = messageBytes.slice(2);
+    // Structure command bytes.
+    const cmdBytes = new Uint8Array(2);
+    cmdBytes[0] = cmd;
+    cmdBytes[1] = keyslot;
+    const cmdHex = buf2hex(cmdBytes);
+    // Prepend the message with the command.
+    const inputBytes = cmdHex + messageBytes;
+    return inputBytes;
 }
 function generateCmd(cmd, keyslot, address, hash, nonce) {
     // EIP-191 signed data for local verification.
@@ -146,7 +166,9 @@ const getSignatureFromScan = async ({ rpId, chipPublicKey, address, hash, nonce,
         console.warn("This function is only available in a browser environment.");
         return;
     }
-    const sigCmd = generateCmd(1, 1, address, hash, nonce);
+    const sigCmd = nonce
+        ? generateCmd(1, 1, address, hash, nonce)
+        : generateCmdForRegistration(1, 1, address, hash);
     const sig = await triggerScan({
         reqx: sigCmd,
         rpId: rpId ?? parseHostName(),
@@ -167,7 +189,9 @@ const getSignatureFromScan = async ({ rpId, chipPublicKey, address, hash, nonce,
     vArr28[0] = 28;
     const v28 = buf2hex(vArr28);
     const computedAddress = ethers.utils.computeAddress("0x" + chipPublicKey);
-    const messageHash = hashMessageEIP191SolidityKeccak(address, hash, nonce);
+    const messageHash = nonce
+        ? hashMessageEIP191SolidityKeccak(address, hash, nonce)
+        : hashMessageEIP191SolidityKeccakNoNonce(address, hash);
     let vType = undefined;
     if (ethers.utils
         .recoverAddress(messageHash, `0x${sigSplit.r}${sigSplit.s}${v27}`)
@@ -224,5 +248,5 @@ const getPublicKeysFromScan = async ({ rpId, } = {}) => {
     throw new Error("Error in getting public key.");
 };
 
-export { getPublicKeysFromScan, getSignatureFromScan, parseKeys };
+export { generateCmdForRegistration, getPublicKeysFromScan, getSignatureFromScan, parseKeys };
 //# sourceMappingURL=index.js.map

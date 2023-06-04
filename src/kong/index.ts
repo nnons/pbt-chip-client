@@ -14,6 +14,31 @@ function parseHostName() {
   return url.hostname;
 }
 
+export function generateCmdForRegistration(
+  cmd: number,
+  keyslot: number,
+  address: string,
+  hash: string
+) {
+  // EIP-191 signed data for local verification.
+  // let messageBytes = ethers.utils.hashMessage(message);
+  let messageBytes = hashMessageEIP191SolidityKeccakNoNonce(address, hash);
+
+  // Remove prepended 0x.
+  messageBytes = messageBytes.slice(2);
+
+  // Structure command bytes.
+  const cmdBytes = new Uint8Array(2);
+  cmdBytes[0] = cmd;
+  cmdBytes[1] = keyslot;
+  const cmdHex = buf2hex(cmdBytes);
+
+  // Prepend the message with the command.
+  const inputBytes = cmdHex + messageBytes;
+
+  return inputBytes;
+}
+
 function generateCmd(
   cmd: number,
   keyslot: number,
@@ -143,6 +168,7 @@ async function triggerScan({ reqx, rpId }: { reqx: string; rpId: string }) {
 //   abi.encodePacked(addr, block.blockhash(block.number - 1))
 // ).toEthSignedMessageHash();
 // address signerOz = signedHash.recover(signature);
+
 export const getSignatureFromScan = async ({
   rpId,
   chipPublicKey,
@@ -153,7 +179,7 @@ export const getSignatureFromScan = async ({
   chipPublicKey: string;
   address: string;
   hash: string;
-  nonce: number;
+  nonce?: number;
   rpId?: string;
 }) => {
   if (!IS_BROWSER) {
@@ -162,7 +188,9 @@ export const getSignatureFromScan = async ({
     return;
   }
 
-  const sigCmd = generateCmd(1, 1, address, hash, nonce);
+  const sigCmd = nonce
+    ? generateCmd(1, 1, address, hash, nonce)
+    : generateCmdForRegistration(1, 1, address, hash);
   const sig = await triggerScan({
     reqx: sigCmd,
     rpId: rpId ?? parseHostName(),
@@ -189,7 +217,9 @@ export const getSignatureFromScan = async ({
   const v28 = buf2hex(vArr28);
 
   const computedAddress = ethers.utils.computeAddress("0x" + chipPublicKey);
-  const messageHash = hashMessageEIP191SolidityKeccakNoNonce(address, hash);
+  const messageHash = nonce
+    ? hashMessageEIP191SolidityKeccak(address, hash, nonce)
+    : hashMessageEIP191SolidityKeccakNoNonce(address, hash);
 
   let vType = undefined;
   if (
