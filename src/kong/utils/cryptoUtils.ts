@@ -4,6 +4,20 @@ import { ethers } from "ethers";
 // TODO: consider using 712 instead https://www.npmjs.com/package/ethers-eip712
 // Would need to mimic _signTypedData functionality https://docs.ethers.io/v5/api/signer/#Signer-signTypedData raw with chip
 // https://github.com/kong-org/halo-verify-web/blob/e821759c0d6190bdc8ffd45aab49b3db300a4b21/src/stores/registerStore.tsx#L156
+export const hashMessageEIP191SolidityKeccakNoNonce = (
+  address: string,
+  hash: string
+) => {
+  const messagePrefix = "\x19Ethereum Signed Message:\n32";
+  const message = ethers.utils.solidityKeccak256(
+    ["address", "bytes32"],
+    [address, hash]
+  );
+  return ethers.utils.solidityKeccak256(
+    ["string", "bytes32"],
+    [messagePrefix, ethers.utils.arrayify(message)]
+  );
+};
 export const hashMessageEIP191SolidityKeccak = (
   address: string,
   hash: string,

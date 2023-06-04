@@ -2,6 +2,7 @@ import { ethers } from "ethers";
 import { buf2hex, fromHexString } from "./utils/bufferUtils";
 import {
   hashMessageEIP191SolidityKeccak,
+  hashMessageEIP191SolidityKeccakNoNonce,
   unpackDERsignature,
 } from "./utils/cryptoUtils";
 
@@ -188,7 +189,7 @@ export const getSignatureFromScan = async ({
   const v28 = buf2hex(vArr28);
 
   const computedAddress = ethers.utils.computeAddress("0x" + chipPublicKey);
-  const messageHash = hashMessageEIP191SolidityKeccak(address, hash, nonce);
+  const messageHash = hashMessageEIP191SolidityKeccakNoNonce(address, hash);
 
   let vType = undefined;
   if (
